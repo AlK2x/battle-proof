@@ -1,3 +1,4 @@
+//go:generate go tool oapi-codegen --config ../api/oapi-codegen.yaml ../api/openapi.yaml
 package main
 
 import (
@@ -8,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"user/pkg/api"
 	"user/pkg/observability"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -30,8 +32,9 @@ func openDbConnection(config Config) *sql.DB {
 
 func initHttpHandler(_ context.Context, _ *sql.DB) http.Handler {
 	r := gin.Default()
+	server := api.NewServer()
 	r.Use(observability.ContextTraceMiddleware())
-	r.GET("/health", func(ctx *gin.Context) {})
+	api.RegisterHandlers(r, server)
 
 	return r
 }
@@ -41,6 +44,7 @@ func main() {
 
 	config := initConfig()
 	db := openDbConnection(config)
+
 	handler := initHttpHandler(ctx, db)
 
 	server := &http.Server{
