@@ -17,6 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const AppName = "battle-proof-user"
+
 func openDbConnection(config Config) *sql.DB {
 	db, err := sql.Open("mysql", config.MysqlDsn)
 	if err != nil {
@@ -30,10 +32,11 @@ func openDbConnection(config Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(_ context.Context, _ *sql.DB) http.Handler {
+func initHttpHandler(_ context.Context) http.Handler {
 	r := gin.Default()
 	server := api.NewServer()
-	r.Use(observability.ContextTraceMiddleware())
+	r.Use(observability.ContextTraceMiddleware(AppName))
+	r.Use(observability.LoggingMiddleware())
 	api.RegisterHandlers(r, server)
 
 	return r
@@ -44,8 +47,11 @@ func main() {
 
 	config := initConfig()
 	db := openDbConnection(config)
-
-	handler := initHttpHandler(ctx, db)
+	err := db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+	handler := initHttpHandler(ctx)
 
 	server := &http.Server{
 		Addr:         config.Port,

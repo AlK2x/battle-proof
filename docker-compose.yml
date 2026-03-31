@@ -1,8 +1,6 @@
 services:
   user:
-    build:
-      context: ./user
-      dockerfile: Dockerfile
+    image: user-app:latest
     restart: unless-stopped
     container_name: user-app
     ports: 

@@ -1,4 +1,4 @@
-FROM golang:1.26 as dependencies
+FROM golang:1.26 AS dependencies
 WORKDIR /src/user
 COPY go.mod .
 COPY go.sum .
@@ -7,10 +7,9 @@ RUN go mod download && go mod verify
 FROM dependencies AS build
 WORKDIR /src/user
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags="-s -w -extldflags '-static'" \
-    -o ./bin/user \
-    ./cmd
+RUN make build
+RUN make openapi-gen
+RUN make test
 
 FROM debian:bookworm-slim
 WORKDIR /app
