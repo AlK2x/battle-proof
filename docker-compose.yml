@@ -13,6 +13,20 @@ services:
         condition: service_healthy
     networks:
       - app-network
+  jam:
+    image: jam-app:latest
+    restart: unless-stopped
+    container_name: jam-app
+    ports: 
+      - 8081:8081
+    environment:
+      - MYSQL_DSN=root@tcp(jamdb:3306)/jam
+      - APP_PORT=:8081
+    depends_on:
+      userdb:
+        condition: service_healthy
+    networks:
+      - app-network
   userdb:
     image: 'mysql:8'
     environment:
