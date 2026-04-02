@@ -1,0 +1,14 @@
+openapi: "3..0"
+info:
+  version: 1.0.0
+  title: Battle service
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Return 200 OK if service is alive
+      responses:
+        '200':
+          description: Service is alive
+        '500':
+          description: Service is not alive

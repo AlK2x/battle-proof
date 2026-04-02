@@ -1,0 +1,8 @@
+SET time_zone = '+00:00';
+
+CREATE DATABASE IF NOT EXISTS userdb CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS 'user_app'@'%' IDENTIFIED BY '${DB_USER_APP_PASSWORD}';
+
+GRANT ALL ON userdb.* TO 'user_app'@'%';
+
+FLUSH PRIVILEGES;

@@ -1,0 +1,8 @@
+SET time_zone = '+00:00';
+
+CREATE DATABASE IF NOT EXISTS jamdb CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS 'jam_app'@'%' IDENTIFIED BY '${DB_JAM_APP_PASSWORD}';
+
+GRANT ALL ON jamdb.* TO 'jam_app'@'%';
+
+FLUSH PRIVILEGES;

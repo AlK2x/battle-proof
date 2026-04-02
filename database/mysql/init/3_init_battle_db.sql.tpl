@@ -1,0 +1,8 @@
+SET time_zone = '+00:00';
+
+CREATE DATABASE IF NOT EXISTS battledb CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS 'battle_app'@'%' IDENTIFIED BY '${DB_BATTLE_APP_PASSWORD}';
+
+GRANT ALL ON battledb.* TO 'battle_app'@'%';
+
+FLUSH PRIVILEGES;

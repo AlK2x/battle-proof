@@ -1,0 +1,6 @@
+.env
+database/mysql/init/*.sql
+user/.env
+jam/.env
+battle/.env
+gradebook/.env
