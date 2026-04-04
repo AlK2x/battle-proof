@@ -1,0 +1,44 @@
+version: "2"
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+  - vendor
+  - api
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gocritic
+    - gosec
+    - unconvert
+    - unparam
+    - misspell
+    - gocyclo
+    - noctx
+    - bodyclose
+    - sqlclosecheck
+  exclusions:
+    paths:
+      - pkg/api
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - funlen
+        - dupl

@@ -14,7 +14,7 @@ func TestSmoke(t *testing.T) {
 	handler := initHttpHandler(ctx)
 
 	r := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health", nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", "/health", nil)
 	handler.ServeHTTP(r, req)
 
 	assert.Equal(t, http.StatusOK, r.Code)

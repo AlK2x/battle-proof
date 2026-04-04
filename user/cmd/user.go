@@ -19,13 +19,13 @@ import (
 
 const AppName = "battle-proof-user"
 
-func openDbConnection(config Config) *sql.DB {
+func openDbConnection(ctx context.Context, config Config) *sql.DB {
 	db, err := sql.Open("mysql", config.MysqlDsn)
 	if err != nil {
 		log.Fatalf("error init mysql db: err %v", err)
 	}
 
-	if err = db.Ping(); err != nil {
+	if err = db.PingContext(ctx); err != nil {
 		log.Fatalf("error mysql ping: err %v", err)
 	}
 
@@ -46,11 +46,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := initConfig()
-	db := openDbConnection(config)
-	err := db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
+	_ = openDbConnection(ctx, config)
 	handler := initHttpHandler(ctx)
 
 	server := &http.Server{
@@ -72,6 +68,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+		log.Printf("shutdown server error: %v", err)
 	}
 }
