@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"jam/config"
 	"jam/pkg/api"
 	"jam/pkg/observability"
 	"log"
@@ -19,7 +20,7 @@ import (
 
 const AppName = "battle-proof-jam"
 
-func openDbConnection(config Config) *sql.DB {
+func openDbConnection(config config.Config) *sql.DB {
 	db, err := sql.Open("mysql", config.MysqlDsn)
 	if err != nil {
 		log.Fatalf("error init mysql db: err %v", err)
@@ -45,7 +46,7 @@ func initHttpHandler(_ context.Context) http.Handler {
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	config := initConfig()
+	config := config.Init()
 	db := openDbConnection(config)
 	err := db.Ping()
 	if err != nil {

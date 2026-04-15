@@ -3,11 +3,16 @@ package messaging
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"jam/config"
 	"jam/internal/domain/jam"
+	"sync"
 	"time"
 
 	"github.com/segmentio/kafka-go"
 )
+
+const Topic = "jams"
 
 type jamCreatedEvent struct {
 	ID         string    `json:"event_id"`
@@ -59,21 +64,38 @@ func (f KafkaEventFactory) marshalPayload(event jam.DomainEvent) ([]byte, error)
 			UserID:     e.UserID,
 		})
 	}
+	return []byte{}, errors.New("unknown DomainEventType")
 }
 
-func NewKafkaEventPublisher(ctx context.Context) *KafkaEventPublisher {
-	return &KafkaEventPublisher{
-		context: ctx,
+var kafkaPublisher *KafkaEventProducer
+var once sync.Once
+
+func GetKafkaEventProducerInstance(ctx context.Context, config config.Config) *KafkaEventProducer {
+	if kafkaPublisher != nil {
+		return kafkaPublisher
 	}
+
+	once.Do(func() {
+		kafkaPublisher = &KafkaEventProducer{
+			context:        ctx,
+			messageFactory: KafkaEventFactory{},
+			writer: &kafka.Writer{
+				Addr:     kafka.TCP(config.KafkaAddr),
+				Topic:    Topic,
+				Balancer: &kafka.LeastBytes{},
+			},
+		}
+	})
+	return kafkaPublisher
 }
 
-type KafkaEventPublisher struct {
+type KafkaEventProducer struct {
 	context        context.Context
 	messageFactory KafkaEventFactory
 	writer         *kafka.Writer
 }
 
-func (p *KafkaEventPublisher) Publish(event jam.DomainEvent) error {
+func (p *KafkaEventProducer) Publish(event jam.DomainEvent) error {
 	e, err := p.messageFactory.Create(event)
 	if err != nil {
 		return err

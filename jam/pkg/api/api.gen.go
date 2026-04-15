@@ -8,19 +8,122 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for ParticipantRole.
+const (
+	Dancer ParticipantRole = "dancer"
+	Judge  ParticipantRole = "judge"
+	Media  ParticipantRole = "media"
+)
+
+// Valid indicates whether the value is a known member of the ParticipantRole enum.
+func (e ParticipantRole) Valid() bool {
+	switch e {
+	case Dancer:
+		return true
+	case Judge:
+		return true
+	case Media:
+		return true
+	default:
+		return false
+	}
+}
+
+// Error defines model for Error.
+type Error struct {
+	// Error error text description
+	Error string `json:"error"`
+}
+
+// Jam defines model for Jam.
+type Jam struct {
+	// CreatedBy Identifier of the user who created the jam
+	CreatedBy openapi_types.UUID `json:"created_by"`
+
+	// Date Date and time of the jam
+	Date time.Time `json:"date"`
+
+	// Id Unique identifier of the created jam
+	Id openapi_types.UUID `json:"id"`
+
+	// Location Location of the jam
+	Location string `json:"location"`
+
+	// Name Jam name
+	Name string `json:"name"`
+}
+
+// Participant defines model for Participant.
+type Participant struct {
+	// Role Role of participant
+	Role ParticipantRole `json:"role"`
+
+	// UserId User ID
+	UserId openapi_types.UUID `json:"user_id"`
+}
+
+// ParticipantRole Role of participant
+type ParticipantRole string
+
+// CreateJamsJSONBody defines parameters for CreateJams.
+type CreateJamsJSONBody struct {
+	// CreatedBy Identifier of the user who created the jam
+	CreatedBy *openapi_types.UUID `json:"created_by,omitempty"`
+
+	// Date Date and time of the jam
+	Date time.Time `json:"date"`
+
+	// Location Location of the jam
+	Location string `json:"location"`
+
+	// Name Jam name
+	Name string `json:"name"`
+}
+
+// CreateJamsJSONRequestBody defines body for CreateJams for application/json ContentType.
+type CreateJamsJSONRequestBody CreateJamsJSONBody
+
+// DeleteJamParticipantJSONRequestBody defines body for DeleteJamParticipant for application/json ContentType.
+type DeleteJamParticipantJSONRequestBody = Participant
+
+// CreateJamParticipantJSONRequestBody defines body for CreateJamParticipant for application/json ContentType.
+type CreateJamParticipantJSONRequestBody = Participant
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Health check
 	// (GET /health)
-	GetHealth(c *gin.Context)
+	Health(c *gin.Context)
+	// Get list of all jams
+	// (GET /jams)
+	JamsList(c *gin.Context)
+	// Create new jam
+	// (POST /jams)
+	CreateJams(c *gin.Context)
+	// find jam by ID
+	// (GET /jams/{id})
+	FindJamById(c *gin.Context, id openapi_types.UUID)
+	// remove jam participant
+	// (DELETE /jams/{id}/participants)
+	DeleteJamParticipant(c *gin.Context, id openapi_types.UUID)
+	// Get list of all jams
+	// (GET /jams/{id}/participants)
+	JamParticipantList(c *gin.Context, id openapi_types.UUID)
+	// Create new jam participant
+	// (POST /jams/{id}/participants)
+	CreateJamParticipant(c *gin.Context, id openapi_types.UUID)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -32,8 +135,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
+// Health operation middleware
+func (siw *ServerInterfaceWrapper) Health(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -42,7 +145,129 @@ func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetHealth(c)
+	siw.Handler.Health(c)
+}
+
+// JamsList operation middleware
+func (siw *ServerInterfaceWrapper) JamsList(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.JamsList(c)
+}
+
+// CreateJams operation middleware
+func (siw *ServerInterfaceWrapper) CreateJams(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateJams(c)
+}
+
+// FindJamById operation middleware
+func (siw *ServerInterfaceWrapper) FindJamById(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.FindJamById(c, id)
+}
+
+// DeleteJamParticipant operation middleware
+func (siw *ServerInterfaceWrapper) DeleteJamParticipant(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteJamParticipant(c, id)
+}
+
+// JamParticipantList operation middleware
+func (siw *ServerInterfaceWrapper) JamParticipantList(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.JamParticipantList(c, id)
+}
+
+// CreateJamParticipant operation middleware
+func (siw *ServerInterfaceWrapper) CreateJamParticipant(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateJamParticipant(c, id)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -72,16 +297,35 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/health", wrapper.GetHealth)
+	router.GET(options.BaseURL+"/health", wrapper.Health)
+	router.GET(options.BaseURL+"/jams", wrapper.JamsList)
+	router.POST(options.BaseURL+"/jams", wrapper.CreateJams)
+	router.GET(options.BaseURL+"/jams/:id", wrapper.FindJamById)
+	router.DELETE(options.BaseURL+"/jams/:id/participants", wrapper.DeleteJamParticipant)
+	router.GET(options.BaseURL+"/jams/:id/participants", wrapper.JamParticipantList)
+	router.POST(options.BaseURL+"/jams/:id/participants", wrapper.CreateJamParticipant)
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/4TNTUoEMRDF8auEtw4xjrjJBfxaCHqCkKkxhd1JSNU0yJC7S2xmowtXVYvH738Bl1NF",
-	"uEBZF0LAc1yNUN84ESw26sK1IODWeecxLGqjEhsj4M45D4sWNcskbjLFRfN8P0jnOZKkzk134o303Is5",
-	"eG9eXwyfrh3DYuLC2wzWRj3O/dMRAQ+kj7tp0UlaLUI/qYP3f/3339ywuP9nWKpex8NCzusa+xcC9qxJ",
-	"mdInxhjjOwAA//+Gj+kWKgEAAA==",
+	"H4sIAAAAAAAC/+xWXW/bNhT9KwS3R7mWY2dr9ZhlW+11WLBuLyuK4oa8iunxQyUpu0ag/z6QshzJkpOg",
+	"bod2y5tAXt2vc3juvaXMqMJo1N7R7JY6tkQF8fNHa40NH4U1BVovMB5jc8zRMSsKL4ymWX1MPH7wpH2R",
+	"UPwAqpBIMyoNg3BIhCMW35fCIqcJ9dsi3Dpvhb6hVZXQ/WX2Zhfu7d7MXK+QeVoldAGqnx2zCB75u+tt",
+	"P8U5R+1FLtASkxO/RFI6tGSzNGT3WzxcgeqkDYxj+n3KR8/ZjI1mecpHL/hzGE2+O3s+m7JJOp1OaUJz",
+	"YxV4mtGyFANlJZSDx35Sl+CRgObEC4VNXocpnKVn56P0fDQ5/2PyIkvTLE3/aocMrkfBwVBcwftR/9Ti",
+	"fYlE9DrSNOJzNaHhQD+lVw07jvTg0my0NxtNfi2dYOQlSDkUQIMa6PICFIk3bY8XskRHwtVrdK5m6/1k",
+	"jDXt/Owr2SGbtLk3xNcrsF4wUYD2fd5aIwfS/t3IyImi9WtCUZcqZMNBM7Q0oauS34QEFHIBIfZdjXub",
+	"XqMC998NciM8ivnlZ4D/oJtNBkldfb9n4QehcxNy9MLHTAJcDu1asFDxGq2rs548S5+loS5ToIZC0IxO",
+	"41FCC/DL2OTxEkH6Zfi8QT/QbvSl1eQsTclvvxCRN4GCYIEU6xAxgBZxn3Oa0Ze1w1CXK4x2NZhnadp3",
+	"/vrQV5XQ8wcMtfGNcZVQVyoFdrsPS9gS2d/xarwC5Y7W9TN6IoXzgUogJYnGh6UsQLlXwvkjxTCjPdbM",
+	"haKQoib/eOXqt1zPjT6vhUfV/fjWYk4z+s34bvCMd1NnHCS92tMArIVtLG+AFwc9KxlD5/JSkib5Vn8f",
+	"nft9udXjcCD2XHu0GmRkC1qCO8M2YIMIVAktjBvA64coJETjJhiSjYgU68JV2yxqJMOrQucvDN+egNXT",
+	"7PyPjasjk2pYaO9+9LbEqqcCk1NU4MtZQR6jJqHHTRZuryxyGwCb/RuScgGc7N40GRElnBP6Zr8zk1yg",
+	"5I4YS4RegxSccPDwRQleV8LuZtT4VvDq6KDKhY64k+ttvYF0Ne8nofkC1MV2zuNYt6DQo3U0e3PoKTgp",
+	"Dxn2MXQSwVvYIJrNL6u3wO5zSVo9fYiAb08csA8O0D5ioRu5KTWvGTzrdz5YhG1jZ9XB8gCVLpbj1m7q",
+	"ar8Sh8TaojLrqJMH62wX48v4+wLUVcfoqwb744bzfTi3m/Mo9U6Hh0wLCVID93UpXoenRxhWJadtxa1e",
+	"7/bj/6vynLLaX3UReVrxOyv+fYq43/SfFPFTKuLkYUV82gE/4Q7Y1eSqqv4JAAD//2uEaMd7FgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
