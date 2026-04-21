@@ -2,6 +2,7 @@ package observability
 
 import (
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,4 +29,22 @@ func LoggingMiddleware() gin.HandlerFunc {
 			slog.String("trace_id", spanCtx.TraceID().String()),
 		)
 	}
+}
+
+type Singleton struct{}
+
+var instance *Singleton
+var once sync.Once
+
+func GetInstance() *Singleton {
+	if instance != nil {
+		return instance
+	}
+	once.Do(func() {
+		if instance != nil {
+			return
+		}
+		instance = &Singleton{}
+	})
+	return instance
 }

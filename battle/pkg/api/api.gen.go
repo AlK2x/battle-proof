@@ -8,19 +8,123 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for BattleStatus.
+const (
+	BattleStatusFinished   BattleStatus = "finished"
+	BattleStatusInProgress BattleStatus = "in_progress"
+	BattleStatusPending    BattleStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the BattleStatus enum.
+func (e BattleStatus) Valid() bool {
+	switch e {
+	case BattleStatusFinished:
+		return true
+	case BattleStatusInProgress:
+		return true
+	case BattleStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BattleResultStatus.
+const (
+	BattleResultStatusFinished BattleResultStatus = "finished"
+)
+
+// Valid indicates whether the value is a known member of the BattleResultStatus enum.
+func (e BattleResultStatus) Valid() bool {
+	switch e {
+	case BattleResultStatusFinished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Battle defines model for Battle.
+type Battle struct {
+	Dancer1Id *openapi_types.UUID `json:"dancer1_id,omitempty"`
+	Dancer2Id *openapi_types.UUID `json:"dancer2_id,omitempty"`
+	EventId   *openapi_types.UUID `json:"event_id,omitempty"`
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	Status    *BattleStatus       `json:"status,omitempty"`
+	WinnerId  *openapi_types.UUID `json:"winner_id,omitempty"`
+}
+
+// BattleStatus defines model for Battle.Status.
+type BattleStatus string
+
+// BattleResult defines model for BattleResult.
+type BattleResult struct {
+	BattleId          *openapi_types.UUID `json:"battle_id,omitempty"`
+	Dancer1TotalScore *int                `json:"dancer1_total_score,omitempty"`
+	Dancer2TotalScore *int                `json:"dancer2_total_score,omitempty"`
+	FinishedAt        *time.Time          `json:"finished_at,omitempty"`
+	Status            *BattleResultStatus `json:"status,omitempty"`
+	WinnerId          *openapi_types.UUID `json:"winner_id,omitempty"`
+}
+
+// BattleResultStatus defines model for BattleResult.Status.
+type BattleResultStatus string
+
+// Error defines model for Error.
+type Error struct {
+	// Error error text description
+	Error string `json:"error"`
+}
+
+// CreateBattleJSONBody defines parameters for CreateBattle.
+type CreateBattleJSONBody struct {
+	Dancer1Id openapi_types.UUID `json:"dancer1_id"`
+	Dancer2Id openapi_types.UUID `json:"dancer2_id"`
+	EventId   openapi_types.UUID `json:"event_id"`
+}
+
+// SubmitScoresJSONBody defines parameters for SubmitScores.
+type SubmitScoresJSONBody struct {
+	Dancer1Score int                `json:"dancer1_score"`
+	Dancer2Score int                `json:"dancer2_score"`
+	JudgeId      openapi_types.UUID `json:"judge_id"`
+}
+
+// CreateBattleJSONRequestBody defines body for CreateBattle for application/json ContentType.
+type CreateBattleJSONRequestBody CreateBattleJSONBody
+
+// SubmitScoresJSONRequestBody defines body for SubmitScores for application/json ContentType.
+type SubmitScoresJSONRequestBody SubmitScoresJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Create battle
+	// (POST /battles)
+	CreateBattle(c *gin.Context)
+	// Finish battle
+	// (POST /battles/{id}/finish)
+	FinishBattle(c *gin.Context, id openapi_types.UUID)
+	// Judge submit score
+	// (POST /battles/{id}/scores)
+	SubmitScores(c *gin.Context, id openapi_types.UUID)
+	// Get balltes
+	// (GET /events/{id}/battles)
+	GetEventBattles(c *gin.Context, id openapi_types.UUID)
 	// Health check
 	// (GET /health)
-	GetHealth(c *gin.Context)
+	Health(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -32,8 +136,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
+// CreateBattle operation middleware
+func (siw *ServerInterfaceWrapper) CreateBattle(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -42,7 +146,92 @@ func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetHealth(c)
+	siw.Handler.CreateBattle(c)
+}
+
+// FinishBattle operation middleware
+func (siw *ServerInterfaceWrapper) FinishBattle(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.FinishBattle(c, id)
+}
+
+// SubmitScores operation middleware
+func (siw *ServerInterfaceWrapper) SubmitScores(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SubmitScores(c, id)
+}
+
+// GetEventBattles operation middleware
+func (siw *ServerInterfaceWrapper) GetEventBattles(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetEventBattles(c, id)
+}
+
+// Health operation middleware
+func (siw *ServerInterfaceWrapper) Health(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.Health(c)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -72,16 +261,35 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/health", wrapper.GetHealth)
+	router.POST(options.BaseURL+"/battles", wrapper.CreateBattle)
+	router.POST(options.BaseURL+"/battles/:id/finish", wrapper.FinishBattle)
+	router.POST(options.BaseURL+"/battles/:id/scores", wrapper.SubmitScores)
+	router.GET(options.BaseURL+"/events/:id/battles", wrapper.GetEventBattles)
+	router.GET(options.BaseURL+"/health", wrapper.Health)
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/4TNTUoEMRDF8auEtw4xjrjJBfxaCHqCkKkxhd1JSNU0yJC7S2xmowtXVYvH738Bl1NF",
-	"uEBZF0LAc1yNUN84ESw26sK1IODWeecxLGqjEhsj4M45D4sWNcskbjLFRfN8P0jnOZKkzk134o303Is5",
-	"eG9eXwyfrh3DYuLC2wzWRj3O/dMRAQ+kj7tp0UlaLUI/qYP3f/3339ywuP9nWKpex8NCzusa+xcC9qxJ",
-	"mdInxhjjOwAA//+Gj+kWKgEAAA==",
+	"H4sIAAAAAAAC/+yX324jNRfAX8Xy911ON5O0QJu7XXZZCkistpdVVbnjk8Rlxh7sM22jqhIqEjcgId4k",
+	"rLbSolLxCs4bIdszk5lMlm5R0yLETTSxPeccn/M7f+acJirLlQSJhg7PqUkmkDH/+IwhpuCecq1y0CjA",
+	"r3MmE9D9Q8HdPzhjWe6OUZZwiD+J+cZ2spVsbI1ivrHDt9lG/+PB9tZm0o83NzdpREdKZwzpkBaF4DSi",
+	"OM3d2wa1kGN6EZXyB2uTDycgcW3S1yXXIMPC+x9kkdHhPs1BcrcZUSEPc63GGoxxooQUZgKcHkQNOxan",
+	"O6JPhZSg78sjskhTduQkoC6go+6iXlFHx5CgMyCQ9hpMkWKXtyO/u2bc+oeokKWHJlHaM1+eExJhDLrJ",
+	"5a0HqwAcMn+b2gLOEDZQZPBh8W3G8Z8XsxdaK90NFlTLHEyiRY5CSToMywThDElzowloqhLmFokwRMO3",
+	"hdCwIl4XEa03h/uluoOOfe6ckCPVteTpq11i39rr+c9k/r39Y/6dndk39tpe2Rv7zi1e2pm9mf9gr+wb",
+	"O7PX85/szfxH+7t9R+yvdja/nF/aaztzC8464UtkSbAhT1/t0oiegDZBW/9J/CR27lI5SJYLOqSbfimi",
+	"OcOJd1kvAO6fc2Wwa/OnGhgCYcQhKOSYhDfIEeApgCR4qkig0+W/C4f35C6v3y1reXAeGHym+NTpSZRE",
+	"kF4ly/NUhBD0jo3TW3WD/1rAXaQvE1qpippea11xNb4LIS4n/YLJlTQhAoO43+UkRJmYIknAmFGRplOS",
+	"+Pg7jRNg3BEyPKdflbm2AjWBU6JGJWE0aiCwfE9n5Fa8dSeM/q9hRIf0f73F1NErR45eqCherLdp6VZS",
+	"IRmpQnLq9e6sTW/ti+c+RCQrDJKcaRSJyF0eKplOiZBESawykSExLAPiq7uzbzB4KPtMMHDCTqAsAkSr",
+	"FDyIpsgypqeLElKG1e1VZad3LvhFLzSbZglql5HP/H5dRnKmWQbocdr/GzkknP2uArrmwzLfQDldhr5J",
+	"321Zd9BJkPjeItCaT1YEIuyn7cSr2/ea06S2wv5StSdib+yV+5nZ3+xb19oejEmpiJ+MiCmOMoEInCjt",
+	"c7cxpDYxXCAaEFtUHmRjR1fVW+lBl1qvyryf2j1vxF441aG2bfnu81aDb80mj0v1fXbsemytL7cd0Yyd",
+	"icwNnf04opmQ5Z/oL4bgrpydO8k5LvgYHqYD16qiJS8s3+a++/BYYUiGBysBj9Yqv3A+JizVwPg0XJqv",
+	"zvJwMlSHyjsur/2cVKZ1YyAew4p5+DVgoSVJhcHFrGJcS/ZSOjPwS8AXbqOqJP/G/iUQMvNhjYwuvueY",
+	"1mz6fpKM9/Ej4ttC5yW4eStNEUxgZgIsxcltmAzimHz9JREjYkCfiATcFyZLxQl0QPk8CFwdirbwvWVZ",
+	"FxH96JaD7mLl4dbFglqSTCD5xg/WfwYAAP//r876VpYTAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

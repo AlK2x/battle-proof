@@ -32,7 +32,7 @@ func openDbConnection(config Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(_ context.Context) http.Handler {
+func initHttpHandler(_ context.Context, db *sql.DB) http.Handler {
 	r := gin.Default()
 	server := api.NewServer()
 	r.Use(observability.ContextTraceMiddleware(AppName))
@@ -47,11 +47,8 @@ func main() {
 
 	config := initConfig()
 	db := openDbConnection(config)
-	err := db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-	handler := initHttpHandler(ctx)
+
+	handler := initHttpHandler(ctx, db)
 
 	server := &http.Server{
 		Addr:         config.Port,

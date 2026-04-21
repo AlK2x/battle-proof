@@ -1,10 +1,184 @@
-openapi: "3..0"
+openapi: 3.0.0
 info:
+  title: Battles API
+  description: API для управления танцевальными баттлами
   version: 1.0.0
-  title: Battle service
+
 paths:
+  /battles:
+    post:
+      summary: Create battle
+      description: Create a dancing battle between two dancers
+      operationId: createBattle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_id
+                - dancer1_id
+                - dancer2_id
+              properties:
+                event_id:
+                  type: string
+                  format: uuid
+                  example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+                dancer1_id:
+                  type: string 
+                  format: uuid
+                  example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+                dancer2_id:
+                  type: string
+                  format: uuid
+                  example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+      responses:
+        '201':
+          description: Battle successfully created
+          headers:
+            Location:
+              schema:
+                type: string
+              description: City of battle
+        '404':
+          descrption: Battle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Dancer must participate only in ont battle at same time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Dancers must have dancer role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{id}/battles:
+    get:
+      summary: Get balltes
+      description: Return list of battles in event
+      operationId: getEventBattles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+      responses:
+        '200':
+          description: Battles list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Battle'
+        '404':
+          description: Battle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /battles/{id}/scores:
+    post:
+      summary: Judge submit score
+      operationId: submitScores
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID баттла
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - judge_id
+                - dancer1_score
+                - dancer2_score
+              properties:
+                judge_id:
+                  type: string
+                  format: uuid
+                  example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+                dancer1_score:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  example: 8
+                dancer2_score:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  example: 9
+      responses:
+        '201':
+          description: Battle got score
+        '404':
+          description: Battle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Judge already scored battle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /battles/{id}/finish:
+    post:
+      summary: Finish battle
+      operationId: finishBattle
+      tags:
+        - Battles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+      responses:
+        '200':
+          description: Battlel successfully finished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BattleResult'
+        '404':
+          description: Баттл не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: no score submitted or not in_progress battle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /health:
     get:
+      operationId: health
       summary: Health check
       description: Return 200 OK if service is alive
       responses:
@@ -12,3 +186,67 @@ paths:
           description: Service is alive
         '500':
           description: Service is not alive
+
+components:
+  schemas:
+    Battle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+        event_id:
+          type: string
+          format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+        dancer1_id:
+          type: string
+          format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+        dancer2_id:
+          type: string
+          format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+        status:
+          type: string
+          enum: [pending, in_progress, finished]
+          example: pending
+        winner_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+
+    BattleResult:
+      type: object
+      properties:
+        battle_id:
+          type: string
+          format: uuid
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+        winner_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
+        dancer1_total_score:
+          type: integer
+        dancer2_total_score:
+          type: integer
+        status:
+          type: string
+          enum: [finished]
+        finished_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: error text description
+          example: location is required

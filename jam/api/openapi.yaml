@@ -255,6 +255,7 @@ components:
           type: string
           description: error text description
           example: location is required
+
     Participant:
       type: object
       required:
@@ -264,7 +265,6 @@ components:
         user_id:
           type: string
           format: uuid
-          description: User ID
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         role:
           type: string

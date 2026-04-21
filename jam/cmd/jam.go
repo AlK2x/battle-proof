@@ -47,11 +47,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := config.Init()
-	db := openDbConnection(config)
-	err := db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
+	_ = openDbConnection(config)
+
 	handler := initHttpHandler(ctx)
 
 	server := &http.Server{
