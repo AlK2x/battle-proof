@@ -1,20 +1,26 @@
 package domain
 
-type BattleStatus string
-
-const (
-	StatusPending  BattleStatus = "pending"
-	StatusProgress BattleStatus = "in_progress"
-	StatusFinished BattleStatus = "finished"
-)
-
 type Battle struct {
 	ID        string
 	EventID   string
 	Dancer1   string
 	Dancer2   string
 	WinnnerID *string
-	Status    BattleStatus
+	status    BattleStatus
+
+	sm *BattleStateMachine
+}
+
+func (b *Battle) GetStatus() BattleStatus {
+	return b.status
+}
+
+func (b *Battle) Start() error {
+	return b.sm.Change(StatusProgress)
+}
+
+func (b *Battle) Finish() error {
+	return b.sm.Change(StatusFinished)
 }
 
 type JudgeScore struct {
