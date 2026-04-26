@@ -26,9 +26,9 @@ func (s *AvgScoreWinnerStrategy) ChooseWinner(battle Battle, scores ...JudgeScor
 		winner = &battle.Dancer2
 	}
 	return BattleResult{
-		battleID:          battle.ID,
-		winnerID:          winner,
-		dancer1TotalScore: int(dancer1Avg),
-		dander2TotalScore: int(dancer2Avg),
+		BattleID:          battle.ID,
+		WinnerID:          winner,
+		Dancer1TotalScore: int(dancer1Avg),
+		Dander2TotalScore: int(dancer2Avg),
 	}
 }

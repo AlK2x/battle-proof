@@ -21,9 +21,9 @@ func (s *SumScoreWinnerStrategy) ChooseWinner(battle Battle, scores ...JudgeScor
 		winner = &battle.Dancer2
 	}
 	return BattleResult{
-		battleID:          battle.ID,
-		winnerID:          winner,
-		dancer1TotalScore: dancer1Score,
-		dander2TotalScore: dancer2Score,
+		BattleID:          battle.ID,
+		WinnerID:          winner,
+		Dancer1TotalScore: dancer1Score,
+		Dander2TotalScore: dancer2Score,
 	}
 }

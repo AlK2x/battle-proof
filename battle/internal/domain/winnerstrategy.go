@@ -1,10 +1,14 @@
 package domain
 
+import "time"
+
 type BattleResult struct {
-	battleID          string
-	winnerID          *string
-	dancer1TotalScore int
-	dander2TotalScore int
+	BattleID          string
+	WinnerID          *string
+	Dancer1TotalScore int
+	Dander2TotalScore int
+	FinishedAt        *time.Time
+	Status            BattleStatus
 }
 
 type WinnerStrategy interface {

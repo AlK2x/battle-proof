@@ -17,7 +17,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for BattleStatus.
@@ -58,12 +57,12 @@ func (e BattleResultStatus) Valid() bool {
 
 // Battle defines model for Battle.
 type Battle struct {
-	Dancer1Id *openapi_types.UUID `json:"dancer1_id,omitempty"`
-	Dancer2Id *openapi_types.UUID `json:"dancer2_id,omitempty"`
-	EventId   *openapi_types.UUID `json:"event_id,omitempty"`
-	Id        *openapi_types.UUID `json:"id,omitempty"`
-	Status    *BattleStatus       `json:"status,omitempty"`
-	WinnerId  *openapi_types.UUID `json:"winner_id,omitempty"`
+	Dancer1Id *string       `json:"dancer1_id,omitempty"`
+	Dancer2Id *string       `json:"dancer2_id,omitempty"`
+	EventId   *string       `json:"event_id,omitempty"`
+	Id        *string       `json:"id,omitempty"`
+	Status    *BattleStatus `json:"status,omitempty"`
+	WinnerId  *string       `json:"winner_id,omitempty"`
 }
 
 // BattleStatus defines model for Battle.Status.
@@ -71,12 +70,12 @@ type BattleStatus string
 
 // BattleResult defines model for BattleResult.
 type BattleResult struct {
-	BattleId          *openapi_types.UUID `json:"battle_id,omitempty"`
+	BattleId          *string             `json:"battle_id,omitempty"`
 	Dancer1TotalScore *int                `json:"dancer1_total_score,omitempty"`
 	Dancer2TotalScore *int                `json:"dancer2_total_score,omitempty"`
 	FinishedAt        *time.Time          `json:"finished_at,omitempty"`
 	Status            *BattleResultStatus `json:"status,omitempty"`
-	WinnerId          *openapi_types.UUID `json:"winner_id,omitempty"`
+	WinnerId          *string             `json:"winner_id,omitempty"`
 }
 
 // BattleResultStatus defines model for BattleResult.Status.
@@ -90,16 +89,16 @@ type Error struct {
 
 // CreateBattleJSONBody defines parameters for CreateBattle.
 type CreateBattleJSONBody struct {
-	Dancer1Id openapi_types.UUID `json:"dancer1_id"`
-	Dancer2Id openapi_types.UUID `json:"dancer2_id"`
-	EventId   openapi_types.UUID `json:"event_id"`
+	Dancer1Id string `json:"dancer1_id"`
+	Dancer2Id string `json:"dancer2_id"`
+	EventId   string `json:"event_id"`
 }
 
 // SubmitScoresJSONBody defines parameters for SubmitScores.
 type SubmitScoresJSONBody struct {
-	Dancer1Score int                `json:"dancer1_score"`
-	Dancer2Score int                `json:"dancer2_score"`
-	JudgeId      openapi_types.UUID `json:"judge_id"`
+	Dancer1Score int    `json:"dancer1_score"`
+	Dancer2Score int    `json:"dancer2_score"`
+	JudgeId      string `json:"judge_id"`
 }
 
 // CreateBattleJSONRequestBody defines body for CreateBattle for application/json ContentType.
@@ -115,13 +114,13 @@ type ServerInterface interface {
 	CreateBattle(c *gin.Context)
 	// Finish battle
 	// (POST /battles/{id}/finish)
-	FinishBattle(c *gin.Context, id openapi_types.UUID)
+	FinishBattle(c *gin.Context, id string)
 	// Judge submit score
 	// (POST /battles/{id}/scores)
-	SubmitScores(c *gin.Context, id openapi_types.UUID)
+	SubmitScores(c *gin.Context, id string)
 	// Get balltes
 	// (GET /events/{id}/battles)
-	GetEventBattles(c *gin.Context, id openapi_types.UUID)
+	GetEventBattles(c *gin.Context, id string)
 	// Health check
 	// (GET /health)
 	Health(c *gin.Context)
@@ -155,9 +154,9 @@ func (siw *ServerInterfaceWrapper) FinishBattle(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id openapi_types.UUID
+	var id string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
 		return
@@ -179,9 +178,9 @@ func (siw *ServerInterfaceWrapper) SubmitScores(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id openapi_types.UUID
+	var id string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
 		return
@@ -203,9 +202,9 @@ func (siw *ServerInterfaceWrapper) GetEventBattles(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id openapi_types.UUID
+	var id string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: "uuid"})
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
 		return
@@ -271,25 +270,24 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

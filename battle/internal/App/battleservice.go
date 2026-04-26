@@ -1,32 +1,40 @@
 package app
 
-import "battle/internal/domain"
+import (
+	"battle/internal/domain"
+	"errors"
+)
+
+var (
+	ErrEventNotFound       = errors.New("event not found")
+	ErrDanceMultipleBattle = errors.New("dancer can participate only in one battle")
+	ErrDancerNoDancerRole  = errors.New("dancer don't have dancer role")
+	ErrNoSubmittedBattle   = errors.New("no submitted or in progress battle")
+)
 
 func NewBattleService(
-	winnerStrategy domain.WinnerStrategy,
-	battleRepository domain.BattleRepository,
-	scoreRepository domain.ScoreRepository,
+	commandFactory domain.CommandFactory,
 ) *BattleService {
 	return &BattleService{
-		winnerStrategy: winnerStrategy,
+		commandFactory: commandFactory,
 	}
 }
 
 type BattleService struct {
-	winnerStrategy   domain.WinnerStrategy
-	battleRepository domain.BattleRepository
-	scoreRepository  domain.ScoreRepository
+	commandFactory domain.CommandFactory
+}
+
+func (bs *BattleService) CreateBattle() error {
+	return nil
+}
+
+func (bs *BattleService) SubmitScore() error {
+	return nil
 }
 
 func (bs *BattleService) FinishBattle(battleID string) (*domain.BattleResult, error) {
-	battle, err := bs.battleRepository.FindBattle(battleID)
-	if err != nil {
-		return nil, err
-	}
-	scores, err := bs.scoreRepository.FindAllForBattle(battleID)
-	if err != nil {
-		return nil, err
-	}
-	result := bs.winnerStrategy.ChooseWinner(battle, scores...)
-	return &result, nil
+	command := bs.commandFactory.CreateFinishBattleCommand(battleID)
+	command.Execute()
+
+	return command.Result, command.Err
 }

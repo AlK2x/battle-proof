@@ -23,26 +23,18 @@ paths:
               properties:
                 event_id:
                   type: string
-                  format: uuid
                   example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
                 dancer1_id:
                   type: string 
-                  format: uuid
                   example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
                 dancer2_id:
                   type: string
-                  format: uuid
                   example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
       responses:
         '201':
           description: Battle successfully created
-          headers:
-            Location:
-              schema:
-                type: string
-              description: City of battle
         '404':
-          descrption: Battle not found
+          descrption: Event not found
           content:
             application/json:
               schema:
@@ -71,7 +63,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
       responses:
         '200':
@@ -99,7 +90,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
           description: ID баттла
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
       requestBody:
@@ -115,7 +105,6 @@ paths:
               properties:
                 judge_id:
                   type: string
-                  format: uuid
                   example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
                 dancer1_score:
                   type: integer
@@ -155,7 +144,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
       responses:
         '200':
@@ -194,19 +182,15 @@ components:
       properties:
         id:
           type: string
-          format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         event_id:
           type: string
-          format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         dancer1_id:
           type: string
-          format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         dancer2_id:
           type: string
-          format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         status:
           type: string
@@ -214,7 +198,6 @@ components:
           example: pending
         winner_id:
           type: string
-          format: uuid
           nullable: true
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
 
@@ -223,11 +206,9 @@ components:
       properties:
         battle_id:
           type: string
-          format: uuid
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         winner_id:
           type: string
-          format: uuid
           nullable: true
           example: "acde070d-8c4c-4f0d-9d8a-162843c10333"
         dancer1_total_score:
