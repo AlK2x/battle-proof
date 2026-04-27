@@ -24,8 +24,14 @@ type BattleService struct {
 	commandFactory domain.CommandFactory
 }
 
-func (bs *BattleService) CreateBattle() error {
-	return nil
+func (bs *BattleService) CreateBattle(params CreateBattleData) error {
+	command := bs.commandFactory.CreateStartBattleCommand(
+		params.EventID,
+		params.Dancer1ID,
+		params.Dancer2ID,
+	)
+	command.Execute()
+	return command.Err
 }
 
 func (bs *BattleService) SubmitScore() error {

@@ -34,7 +34,9 @@ func openDbConnection(config Config) *sql.DB {
 
 func initHttpHandler(_ context.Context) http.Handler {
 	r := gin.Default()
-	server := api.NewServer()
+
+	battleService := CreateBattleService()
+	server := api.NewServer(battleService)
 	r.Use(observability.ContextTraceMiddleware(AppName))
 	r.Use(observability.LoggingMiddleware())
 	api.RegisterHandlers(r, server)

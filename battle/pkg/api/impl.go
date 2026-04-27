@@ -14,7 +14,7 @@ type Server struct {
 	battleService app.BattleService
 }
 
-func NewServer(battleService app.BattleService) *Server {
+func NewServer(battleService *app.BattleService) ServerInterface {
 	return &Server{}
 }
 
@@ -39,8 +39,8 @@ func (s *Server) CreateBattle(c *gin.Context) {
 
 // Finish battle
 // (POST /battles/{id}/finish)
-func (s *Server) FinishBattle(c *gin.Context, id openapi_types.UUID) {
-	result, err := s.battleService.FinishBattle(id.String())
+func (s *Server) FinishBattle(c *gin.Context, id string) {
+	result, err := s.battleService.FinishBattle(id)
 	if err != nil {
 		responseError := Error{
 			Error: err.Error(),
@@ -61,13 +61,13 @@ func (s *Server) FinishBattle(c *gin.Context, id openapi_types.UUID) {
 
 // Judge submit score
 // (POST /battles/{id}/scores)
-func (s *Server) SubmitScores(c *gin.Context, id openapi_types.UUID) {
+func (s *Server) SubmitScores(c *gin.Context, id string) {
 
 }
 
 // Get balltes
 // (GET /events/{id}/battles)
-func (s *Server) GetEventBattles(c *gin.Context, id openapi_types.UUID) {}
+func (s *Server) GetEventBattles(c *gin.Context, id string) {}
 
 // Health check
 // (GET /health)

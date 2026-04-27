@@ -6,4 +6,5 @@ type ScoreRepository interface {
 
 type BattleRepository interface {
 	FindBattle(battleID string) (Battle, error)
+	Store(battle Battle) error
 }

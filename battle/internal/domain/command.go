@@ -1,7 +1,21 @@
 package domain
 
+import "github.com/google/uuid"
+
 type Command interface {
 	Execute()
+}
+
+func NewCommandFactory(
+	battleRepo BattleRepository,
+	scoreRepo ScoreRepository,
+	winStrategy WinnerStrategy,
+) CommandFactory {
+	return CommandFactory{
+		winnerStrategy:   winStrategy,
+		battleRepository: battleRepo,
+		scoreRepository:  scoreRepo,
+	}
 }
 
 type CommandFactory struct {
@@ -12,15 +26,39 @@ type CommandFactory struct {
 
 func (cf *CommandFactory) CreateFinishBattleCommand(ID string) *FinishBattleCommand {
 	return &FinishBattleCommand{
-		battleID: ID,
+		winnerStrategy:   cf.winnerStrategy,
+		battleRepository: cf.battleRepository,
+		scoreRepository:  cf.scoreRepository,
+		battleID:         ID,
+	}
+}
+
+func (cf *CommandFactory) CreateStartBattleCommand(eventID, dancer1ID, dancer2ID string) *StartBattleCommand {
+	return &StartBattleCommand{
+		eventID:          eventID,
+		dancer1ID:        dancer1ID,
+		dancer2ID:        dancer2ID,
+		battleRepository: cf.battleRepository,
 	}
 }
 
 type StartBattleCommand struct {
+	eventID          string
+	dancer1ID        string
+	dancer2ID        string
+	battleRepository BattleRepository
+	Err              error
 }
 
 func (sb *StartBattleCommand) Execute() {
-	panic("not implemented") // TODO: Implement
+	battle := Battle{
+		ID:      uuid.NewString(),
+		status:  StatusPending,
+		EventID: sb.eventID,
+		Dancer1: sb.dancer1ID,
+		Dancer2: sb.dancer2ID,
+	}
+	sb.Err = sb.battleRepository.Store(battle)
 }
 
 type SubmitScoreCommand struct {
