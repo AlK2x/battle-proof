@@ -15,5 +15,5 @@ FROM debian:bookworm-slim
 WORKDIR /app
 COPY --from=build --chmod=755 /src/gradebook/bin/gradebook /app/gradebook
 RUN ls -al .
-EXPOSE 8080
+EXPOSE 8083
 ENTRYPOINT ["/app/gradebook"]

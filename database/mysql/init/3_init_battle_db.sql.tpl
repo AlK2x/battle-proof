@@ -7,25 +7,15 @@ GRANT ALL ON battledb.* TO 'battle_app'@'%';
 
 FLUSH PRIVILEGES;
 
-
 CREATE TABLE IF NOT EXISTS battle (
     id VARCHAR(36) PRIMARY KEY,
     event_id VARCHAR(36) NOT NULL,
     dancer1 VARCHAR(255) NOT NULL,
     dancer2 VARCHAR(255) NOT NULL,
     winner_id VARCHAR(36) DEFAULT NULL,
-    status ENUM('pending', 'in_progress', 'finished'') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'in_progress', 'finished') NOT NULL DEFAULT 'pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_event_id (event_id),
-    INDEX idx_status (status),
-    INDEX idx_dancer1 (dancer1),
-    INDEX idx_dancer2 (dancer2),
-    INDEX idx_winner (winner_id),
-    
-    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-    FOREIGN KEY (winner_id) REFERENCES dancers(id) ON DELETE SET NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS judge_score (
@@ -39,4 +29,4 @@ CREATE TABLE IF NOT EXISTS judge_score (
     PRIMARY KEY (battle_id, judge_id),
     
     FOREIGN KEY (battle_id) REFERENCES battle(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

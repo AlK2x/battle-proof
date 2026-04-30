@@ -69,4 +69,5 @@ func (r *MySqlBattleRepository) Store(ctx context.Context, battle domain.Battle)
 	if err != nil {
 		return err
 	}
+	return nil
 }

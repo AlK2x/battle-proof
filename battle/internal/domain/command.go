@@ -98,6 +98,6 @@ func (fb *FinishBattleCommand) Execute() {
 		fb.Err = err
 		return
 	}
-	result := fb.winnerStrategy.ChooseWinner(battle, scores...)
+	result := fb.winnerStrategy.ChooseWinner(*battle, scores...)
 	fb.Result = &result
 }

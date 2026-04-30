@@ -11,7 +11,7 @@ import (
 
 func TestSmoke(t *testing.T) {
 	ctx := context.Background()
-	handler := initHttpHandler(ctx)
+	handler := initHttpHandler(ctx, nil)
 
 	r := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/health", nil)

@@ -9,7 +9,7 @@ type Config struct {
 
 func initConfig() Config {
 	return Config{
-		MysqlDsn: os.Getenv("MYSQL_DSN"),
-		Port:     os.Getenv("APP_PORT"),
+		MysqlDsn: os.Getenv("BATTLE_MYSQL_DSN"),
+		Port:     os.Getenv("BATTLE_APP_PORT"),
 	}
 }

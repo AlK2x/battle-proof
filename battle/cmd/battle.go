@@ -61,6 +61,7 @@ func main() {
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
+	log.Printf("running service on %v", config.Port)
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {

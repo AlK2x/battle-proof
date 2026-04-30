@@ -15,5 +15,5 @@ FROM debian:bookworm-slim
 WORKDIR /app
 COPY --from=build --chmod=755 /src/battle/bin/battle /app/battle
 RUN ls -al .
-EXPOSE 8080
+EXPOSE 8082
 ENTRYPOINT ["/app/battle"]
