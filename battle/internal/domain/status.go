@@ -28,7 +28,7 @@ func NewBattleStateMachine(battle *Battle) (*BattleStateMachine, error) {
 	}
 
 	var state BattleState
-	switch battle.status {
+	switch battle.Status {
 	case StatusPending:
 		state = pendingState
 	case StatusProgress:
@@ -36,7 +36,7 @@ func NewBattleStateMachine(battle *Battle) (*BattleStateMachine, error) {
 	case StatusFinished:
 		state = finishedState
 	default:
-		return nil, fmt.Errorf("unknown battle status %s", battle.status)
+		return nil, fmt.Errorf("unknown battle status %s", battle.Status)
 	}
 
 	sm.pendingState = pendingState
@@ -64,7 +64,7 @@ func (b *BattleStateMachine) Change(to BattleStatus) error {
 
 func (b *BattleStateMachine) setState(next BattleState, status BattleStatus) {
 	b.state = next
-	b.battle.status = status
+	b.battle.Status = status
 }
 
 type BattleState interface {

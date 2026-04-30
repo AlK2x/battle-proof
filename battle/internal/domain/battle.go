@@ -6,13 +6,13 @@ type Battle struct {
 	Dancer1   string
 	Dancer2   string
 	WinnnerID *string
-	status    BattleStatus
+	Status    BattleStatus
 
 	sm *BattleStateMachine
 }
 
 func (b *Battle) GetStatus() BattleStatus {
-	return b.status
+	return b.Status
 }
 
 func (b *Battle) Start() error {

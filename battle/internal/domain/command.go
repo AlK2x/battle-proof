@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type Command interface {
 	Execute()
@@ -33,12 +37,14 @@ func (cf *CommandFactory) CreateFinishBattleCommand(ID string) *FinishBattleComm
 	}
 }
 
-func (cf *CommandFactory) CreateStartBattleCommand(eventID, dancer1ID, dancer2ID string) *StartBattleCommand {
+func (cf *CommandFactory) CreateStartBattleCommand(ctx context.Context, eventID, dancer1ID, dancer2ID string) *StartBattleCommand {
 	return &StartBattleCommand{
 		eventID:          eventID,
 		dancer1ID:        dancer1ID,
 		dancer2ID:        dancer2ID,
 		battleRepository: cf.battleRepository,
+
+		ctx: ctx,
 	}
 }
 
@@ -48,17 +54,19 @@ type StartBattleCommand struct {
 	dancer2ID        string
 	battleRepository BattleRepository
 	Err              error
+
+	ctx context.Context
 }
 
 func (sb *StartBattleCommand) Execute() {
 	battle := Battle{
 		ID:      uuid.NewString(),
-		status:  StatusPending,
+		Status:  StatusPending,
 		EventID: sb.eventID,
 		Dancer1: sb.dancer1ID,
 		Dancer2: sb.dancer2ID,
 	}
-	sb.Err = sb.battleRepository.Store(battle)
+	sb.Err = sb.battleRepository.Store(sb.ctx, battle)
 }
 
 type SubmitScoreCommand struct {
@@ -74,17 +82,18 @@ type FinishBattleCommand struct {
 	battleRepository BattleRepository
 	scoreRepository  ScoreRepository
 
+	ctx    context.Context
 	Err    error
 	Result *BattleResult
 }
 
 func (fb *FinishBattleCommand) Execute() {
-	battle, err := fb.battleRepository.FindBattle(fb.battleID)
+	battle, err := fb.battleRepository.FindBattle(fb.ctx, fb.battleID)
 	if err != nil {
 		fb.Err = err
 		return
 	}
-	scores, err := fb.scoreRepository.FindAllForBattle(fb.battleID)
+	scores, err := fb.scoreRepository.FindAllForBattle(fb.ctx, fb.battleID)
 	if err != nil {
 		fb.Err = err
 		return

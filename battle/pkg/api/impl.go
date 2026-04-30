@@ -26,7 +26,12 @@ func (s *Server) CreateBattle(c *gin.Context) {
 		return
 	}
 
-	err := s.battleService.CreateBattle()
+	params := app.CreateBattleData{
+		EventID:   createBattle.EventId,
+		Dancer1ID: createBattle.Dancer1Id,
+		Dancer2ID: createBattle.Dancer2Id,
+	}
+	err := s.battleService.CreateBattle(c.Request.Context(), params)
 	if err != nil {
 		responseError := Error{
 			Error: err.Error(),

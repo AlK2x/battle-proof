@@ -2,6 +2,7 @@
 package main
 
 import (
+	"battle/internal/infrastructure/mysql"
 	"battle/pkg/api"
 	"battle/pkg/observability"
 	"context"
@@ -32,10 +33,12 @@ func openDbConnection(config Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(_ context.Context) http.Handler {
+func initHttpHandler(_ context.Context, db *sql.DB) http.Handler {
 	r := gin.Default()
 
-	battleService := CreateBattleService()
+	battleRepo := mysql.NewMysqlBattleRepository(db)
+	scoreRepo := mysql.NewMysqlScoreRepository(db)
+	battleService := CreateBattleService(battleRepo, scoreRepo)
 	server := api.NewServer(battleService)
 	r.Use(observability.ContextTraceMiddleware(AppName))
 	r.Use(observability.LoggingMiddleware())
@@ -48,9 +51,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := initConfig()
-	_ = openDbConnection(config)
+	db := openDbConnection(config)
 
-	handler := initHttpHandler(ctx)
+	handler := initHttpHandler(ctx, db)
 
 	server := &http.Server{
 		Addr:         config.Port,

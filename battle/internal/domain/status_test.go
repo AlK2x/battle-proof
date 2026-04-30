@@ -6,7 +6,7 @@ import (
 
 func TestBattleState(t *testing.T) {
 	battle := Battle{
-		status: StatusPending,
+		Status: StatusPending,
 	}
 	stateMachine, _ := NewBattleStateMachine(&battle)
 

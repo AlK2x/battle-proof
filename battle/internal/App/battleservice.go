@@ -2,6 +2,7 @@ package app
 
 import (
 	"battle/internal/domain"
+	"context"
 	"errors"
 )
 
@@ -24,8 +25,9 @@ type BattleService struct {
 	commandFactory domain.CommandFactory
 }
 
-func (bs *BattleService) CreateBattle(params CreateBattleData) error {
+func (bs *BattleService) CreateBattle(ctx context.Context, params CreateBattleData) error {
 	command := bs.commandFactory.CreateStartBattleCommand(
+		ctx,
 		params.EventID,
 		params.Dancer1ID,
 		params.Dancer2ID,
