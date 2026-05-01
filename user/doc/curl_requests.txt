@@ -1,0 +1,12 @@
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation($input: CreateUserInput!) { createUser(input: $input) { id name email level createdAt } }",
+    "variables": {
+      "input": {
+        "name": "Jane Smith",
+        "email": "jane@example.com",
+        "level": "pro"
+      }
+    }
+  }'

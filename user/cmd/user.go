@@ -4,20 +4,27 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
+	"user/internal/app"
+	"user/internal/infrastructure/mysql"
 	"user/pkg/api"
+	"user/pkg/api/graph"
 	"user/pkg/observability"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/gin-gonic/gin"
 )
 
 const AppName = "battle-proof-user"
+const GinContext = "gin-context"
 
 func openDbConnection(ctx context.Context, config Config) *sql.DB {
 	db, err := sql.Open("mysql", config.MysqlDsn)
@@ -32,22 +39,60 @@ func openDbConnection(ctx context.Context, config Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(_ context.Context) http.Handler {
+func GinContextToContextMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := context.WithValue(c.Request.Context(), GinContext, c)
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	}
+}
+
+func GinContextFromContext(ctx context.Context) (*gin.Context, error) {
+	ginContext := ctx.Value(GinContext)
+	if ginContext == nil {
+		return nil, errors.New("gin.Context not found")
+	}
+
+	gc, ok := ginContext.(*gin.Context)
+	if !ok {
+		return nil, errors.New("gin.Context wrong type")
+	}
+
+	return gc, nil
+}
+
+func initHttpHandler(_ context.Context, service app.UserService) http.Handler {
 	r := gin.Default()
 	server := api.NewServer()
+	r.Use(GinContextToContextMiddleware())
 	r.Use(observability.ContextTraceMiddleware(AppName))
 	r.Use(observability.LoggingMiddleware())
+
 	api.RegisterHandlers(r, server)
 
+	r.POST("/query", grapqlHandler(service))
+	r.GET("/query", grapqlHandler(service))
+
 	return r
+}
+
+func grapqlHandler(service app.UserService) gin.HandlerFunc {
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{UserService: service}}))
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+	return func(c *gin.Context) {
+		srv.ServeHTTP(c.Writer, c.Request)
+	}
 }
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := initConfig()
-	_ = openDbConnection(ctx, config)
-	handler := initHttpHandler(ctx)
+	db := openDbConnection(ctx, config)
+
+	userService := app.NewUserService(mysql.NewMysqlUserRepository(db))
+	handler := initHttpHandler(ctx, *userService)
 
 	server := &http.Server{
 		Addr:         config.Port,

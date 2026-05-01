@@ -1,0 +1,25 @@
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    level: DancerLevel # null если не dancer
+    createdAt: String!
+}
+
+enum UserRole { dancer judge media organizer }
+enum DancerLevel { beginner amateur pro }
+
+input CreateUserInput {
+    name: String!
+    email: String!
+    level: DancerLevel
+}
+
+type Query {
+    user(id: ID!): User
+    users: [User!]!
+}
+
+type Mutation {
+    createUser(input: CreateUserInput!): User!
+}
