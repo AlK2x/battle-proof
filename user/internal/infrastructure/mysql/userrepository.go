@@ -48,7 +48,7 @@ func (r *MysqlUserRepository) Find(ctx context.Context, userID string) (*domain.
 		level     *domain.DancerLevel
 		createdAt time.Time
 	)
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	err = rows.Scan(&ID, &name, &email, &level, &createdAt)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (r *MysqlUserRepository) ListUsers(ctx context.Context) ([]*domain.User, er
 		level     *domain.DancerLevel
 		createdAt time.Time
 	)
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	result := make([]*domain.User, 0)
 	for rows.Next() {
 		err := rows.Scan(&ID, &name, &email, &level, &createdAt)
