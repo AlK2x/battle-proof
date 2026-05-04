@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os/signal"
@@ -33,7 +34,7 @@ const (
 	GinContext GinContextKey = "gin-context"
 )
 
-func migrateDatabase(db *sql.DB) error {
+func migrateDatabase(db *sql.DB, config Config) error {
 	driver, err := mysqlmigrate.WithInstance(db, &mysqlmigrate.Config{
 		DatabaseName:    "userdb",
 		MigrationsTable: "schema_migrations",
@@ -42,7 +43,7 @@ func migrateDatabase(db *sql.DB) error {
 		return err
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///app/database/mysql",
+		config.MigrationPath,
 		"mysql",
 		driver,
 	)
@@ -57,17 +58,17 @@ func migrateDatabase(db *sql.DB) error {
 	return nil
 }
 
-func openDbConnection(ctx context.Context, config Config) *sql.DB {
+func openDbConnection(ctx context.Context, config Config) (*sql.DB, error) {
 	db, err := sql.Open("mysql", config.MysqlDsn)
 	if err != nil {
-		log.Fatalf("error init mysql db: err %v", err)
+		return nil, fmt.Errorf("open mysql db error %v", err)
 	}
 
 	if err = db.PingContext(ctx); err != nil {
-		log.Fatalf("error mysql ping: err %v", err)
+		return nil, fmt.Errorf("ping mysql db error %v", err)
 	}
 
-	return db
+	return db, nil
 }
 
 func GinContextToContextMiddleware() gin.HandlerFunc {
@@ -120,8 +121,11 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := initConfig()
-	db := openDbConnection(ctx, config)
-	err := migrateDatabase(db)
+	db, err := openDbConnection(ctx, config)
+	if err != nil {
+		log.Fatalf("openDbConnection error %v", err)
+	}
+	err = migrateDatabase(db, config)
 	if err != nil {
 		log.Fatalf("DB migration error %v", err)
 	}
