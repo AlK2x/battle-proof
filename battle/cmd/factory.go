@@ -1,7 +1,7 @@
 package main
 
 import (
-	app "battle/internal/App"
+	app "battle/internal/app"
 	"battle/internal/domain"
 )
 

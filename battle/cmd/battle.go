@@ -7,6 +7,7 @@ import (
 	"battle/pkg/observability"
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os/signal"
@@ -14,23 +15,51 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	mysqlmigrate "github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 
 	"github.com/gin-gonic/gin"
 )
 
 const AppName = "battle-proof-jam"
 
-func openDbConnection(config Config) *sql.DB {
+func openDbConnection(config Config) (*sql.DB, error) {
 	db, err := sql.Open("mysql", config.MysqlDsn)
 	if err != nil {
-		log.Fatalf("error init mysql db: err %v", err)
+		return nil, fmt.Errorf("open mysql db error %v", err)
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Fatalf("error mysql ping: err %v", err)
+		return nil, fmt.Errorf("ping mysql db error %v", err)
 	}
 
-	return db
+	return db, nil
+}
+
+func migrateDatabase(db *sql.DB, config Config) error {
+	driver, err := mysqlmigrate.WithInstance(db, &mysqlmigrate.Config{
+		DatabaseName:    "userdb",
+		MigrationsTable: "schema_migrations",
+	})
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		config.MigrationPath,
+		"mysql",
+		driver,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
 }
 
 func initHttpHandler(_ context.Context, db *sql.DB) http.Handler {
@@ -51,8 +80,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := initConfig()
-	db := openDbConnection(config)
-
+	db, err := openDbConnection(config)
+	if err != nil {
+		log.Fatalf("openDbConnection error %v", err)
+	}
+	err = migrateDatabase(db, config)
+	if err != nil {
+		log.Fatalf("DB migration error %v", err)
+	}
 	handler := initHttpHandler(ctx, db)
 
 	server := &http.Server{

@@ -13,7 +13,10 @@ RUN make test
 
 FROM debian:bookworm-slim
 WORKDIR /app
+COPY --from=build /src/battle/database/mysql /app/database/mysql
 COPY --from=build --chmod=755 /src/battle/bin/battle /app/battle
+RUN ls -al /app/database/mysql && \
+    ls -al /app
 RUN ls -al .
 EXPOSE 8082
 ENTRYPOINT ["/app/battle"]

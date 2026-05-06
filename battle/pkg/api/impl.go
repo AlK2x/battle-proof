@@ -1,7 +1,7 @@
 package api
 
 import (
-	app "battle/internal/App"
+	app "battle/internal/app"
 	"errors"
 	"net/http"
 
