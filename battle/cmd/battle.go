@@ -76,19 +76,27 @@ func initHttpHandler(_ context.Context, db *sql.DB) http.Handler {
 	return r
 }
 
+func createHandler(ctx context.Context, config Config) (http.Handler, error) {
+	db, err := openDbConnection(config)
+	if err != nil {
+		return nil, err
+	}
+	err = migrateDatabase(db, config)
+	if err != nil {
+		return nil, err
+	}
+	handler := initHttpHandler(ctx, db)
+	return handler, nil
+}
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	config := initConfig()
-	db, err := openDbConnection(config)
+	handler, err := createHandler(ctx, config)
 	if err != nil {
-		log.Fatalf("openDbConnection error %v", err)
+		log.Fatalf("createHandlerError %v", err)
 	}
-	err = migrateDatabase(db, config)
-	if err != nil {
-		log.Fatalf("DB migration error %v", err)
-	}
-	handler := initHttpHandler(ctx, db)
 
 	server := &http.Server{
 		Addr:         config.Port,

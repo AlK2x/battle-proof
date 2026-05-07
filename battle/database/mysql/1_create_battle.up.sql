@@ -7,6 +7,5 @@ CREATE TABLE `battle` (
      `status` ENUM('pending', 'in_progress', 'finished') DEFAULT NULL,
      `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
      `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-     PRIMARY KEY (`id`),
-     UNIQUE (email)
+     PRIMARY KEY (`id`)
 )

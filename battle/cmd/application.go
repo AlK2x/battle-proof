@@ -1,8 +1,11 @@
 package main
 
 import (
-	app "battle/internal/app"
+	"battle/internal/app"
 	"battle/internal/domain"
+
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func CreateBattleService(battleRepo domain.BattleRepository, scoreRepo domain.ScoreRepository) *app.BattleService {
