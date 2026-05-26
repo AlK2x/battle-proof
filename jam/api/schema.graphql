@@ -1,0 +1,12 @@
+type User {
+    id: ID!
+    level: DancerLevel # null если не dancer
+    role: UserRole!
+}
+
+enum UserRole { dancer judge media organizer }
+enum DancerLevel { beginner amateur pro }
+
+type Query {
+    user(id: ID!): User
+}

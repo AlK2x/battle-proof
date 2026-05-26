@@ -1,0 +1,20 @@
+model:
+  filename: pkg/api/graph/models_gen.go # https://github.com/99designs/gqlgen/tree/master/plugin/modelgen
+client:
+  filename: pkg/api/graph/client.go # Where should any generated client go?
+models:
+  Int:
+    model: github.com/99designs/gqlgen/graphql.Int64
+  Date:
+    model: github.com/99designs/gqlgen/graphql.Time
+federation: # Add this if your schema includes Apollo Federation related directives
+  version: 2
+schema:
+  - "api/*.graphql" # Where are all the schema files located?
+query:
+  - "api/query/*.graphql" # Where are all the query files located?
+generate:
+  clientInterfaceName: "UserGraphQLClient" # Determine the name of the generated client interface
+  structFieldsAlwaysPointers: true # Optional: Always use pointers for struct fields (default: true). [same as gqlgen](https://github.com/99designs/gqlgen/blob/e1ef86e795e738654c98553b325a248c02c8c2f8/docs/content/config.md?plain=1#L73)
+  onlyUsedModels: true # Optional: Only generate used models
+  enableClientJsonOmitemptyTag: true # Optional: Controls whether the "omitempty" option is added to JSON tags (default: true)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"jam/internal/application"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,10 +10,14 @@ import (
 
 var _ ServerInterface = (*Server)(nil)
 
-type Server struct{}
+type Server struct {
+	jamService *application.JamService
+}
 
-func NewServer() *Server {
-	return &Server{}
+func NewServer(jamService *application.JamService) *Server {
+	return &Server{
+		jamService: jamService,
+	}
 }
 
 // (GET /health)
@@ -26,7 +31,23 @@ func (s *Server) JamsList(c *gin.Context) {}
 
 // Create new jam
 // (POST /jams)
-func (s *Server) CreateJams(c *gin.Context) {}
+func (s *Server) CreateJams(c *gin.Context) {
+	var createJam CreateJamsJSONRequestBody
+	if err := c.BindJSON(&createJam); err != nil {
+		return
+	}
+
+	params := application.CreateJamParams{
+		Name:      createJam.Name,
+		Location:  createJam.Location,
+		Date:      createJam.Date,
+		CreatedBy: createJam.CreatedBy.String(),
+	}
+	err := s.jamService.CreateJam(c.Request.Context(), params)
+	if err != nil {
+
+	}
+}
 
 // find jam by ID
 // (GET /jams/{id})

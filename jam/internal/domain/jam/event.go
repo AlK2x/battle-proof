@@ -38,6 +38,15 @@ type JamCreatedEvent struct {
 	Event
 	Name     string
 	Location string
+	Date     time.Time
+}
+
+func (jce JamCreatedEvent) GetType() EventType {
+	return jce.Event.Type
+}
+
+func (jce JamCreatedEvent) GetOccurredAt() time.Time {
+	return jce.Event.OccurredAt
 }
 
 type ParticipantAddedEvent struct {

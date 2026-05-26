@@ -5,6 +5,11 @@ openapi-gen:
 	@echo "-- buliding OpenAPI"
 	go generate ./cmd/...
 
+.PHONY: gql-gen
+gql-gen:
+	@echo "-- building GraphQL client"
+	gqlgenc generate --configdir api
+
 .PHONY: build
 build:
 	@echo "-- building binary"
