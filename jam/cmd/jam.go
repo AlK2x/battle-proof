@@ -5,6 +5,8 @@ import (
 	"context"
 	"database/sql"
 	"jam/config"
+	"jam/internal/application"
+	"jam/internal/infrastructure/messaging"
 	"jam/pkg/api"
 	"jam/pkg/observability"
 	"log"
@@ -33,9 +35,12 @@ func openDbConnection(config config.Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(_ context.Context) http.Handler {
+func initHttpHandler(ctx context.Context, config config.Config) http.Handler {
 	r := gin.Default()
-	server := api.NewServer()
+	eventBus := messaging.GetKafkaEventProducerInstance(ctx, config)
+
+	service := application.NewJamService(eventBus)
+	server := api.NewServer(service)
 	r.Use(observability.ContextTraceMiddleware(AppName))
 	r.Use(observability.LoggingMiddleware())
 	api.RegisterHandlers(r, server)
@@ -49,7 +54,7 @@ func main() {
 	config := config.Init()
 	_ = openDbConnection(config)
 
-	handler := initHttpHandler(ctx)
+	handler := initHttpHandler(ctx, config)
 
 	server := &http.Server{
 		Addr:         config.Port,

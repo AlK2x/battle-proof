@@ -16,8 +16,9 @@ func Init() Config {
 	debug := os.Getenv("APP_DEBUG")
 	isDebug, _ := strconv.ParseBool(debug)
 	return Config{
-		MysqlDsn: os.Getenv("MYSQL_DSN"),
-		Port:     os.Getenv("APP_PORT"),
-		Debug:    isDebug,
+		MysqlDsn:  os.Getenv("MYSQL_DSN"),
+		Port:      os.Getenv("APP_PORT"),
+		KafkaAddr: os.Getenv("KAFKA_BROCKER_URL"),
+		Debug:     isDebug,
 	}
 }

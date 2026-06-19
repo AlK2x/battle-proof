@@ -10,6 +10,12 @@ type EventPublisher interface {
 	Publish(event jam.DomainEvent) error
 }
 
+func NewJamService(eventBus EventPublisher) *JamService {
+	return &JamService{
+		eventBus: eventBus,
+	}
+}
+
 type JamService struct {
 	eventBus EventPublisher
 }
