@@ -35,9 +35,8 @@ func openDbConnection(config config.Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(ctx context.Context, config config.Config) http.Handler {
+func initHttpHandler(config config.Config, eventBus application.EventPublisher) http.Handler {
 	r := gin.Default()
-	eventBus := messaging.GetKafkaEventProducerInstance(ctx, config)
 
 	service := application.NewJamService(eventBus)
 	server := api.NewServer(service)
@@ -50,12 +49,19 @@ func initHttpHandler(ctx context.Context, config config.Config) http.Handler {
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	config := config.Init()
 	_ = openDbConnection(config)
 
-	handler := initHttpHandler(ctx, config)
+	eventBus := messaging.NewKafkaEventProducer(config)
+	defer func() {
+		if err := eventBus.Close(); err != nil {
+			log.Printf("error closing event bus: %v", err)
+		}
+	}()
 
+	handler := initHttpHandler(config, eventBus)
 	server := &http.Server{
 		Addr:         config.Port,
 		Handler:      handler,

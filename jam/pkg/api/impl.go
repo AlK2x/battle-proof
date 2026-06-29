@@ -45,8 +45,10 @@ func (s *Server) CreateJams(c *gin.Context) {
 	}
 	err := s.jamService.CreateJam(c.Request.Context(), params)
 	if err != nil {
-
+		c.JSON(http.StatusInternalServerError, err)
+		return
 	}
+	c.JSON(http.StatusCreated, nil)
 }
 
 // find jam by ID

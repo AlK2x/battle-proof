@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"jam/config"
@@ -28,9 +29,10 @@ func CreateTestConfig(kafkaUrl string) config.Config {
 }
 
 func TestSmoke(t *testing.T) {
-	ctx := context.Background()
 	config := config.Init()
-	handler := initHttpHandler(ctx, config)
+	eventBus := messaging.NewKafkaEventProducer(config)
+	defer eventBus.Close()
+	handler := initHttpHandler(config, eventBus)
 
 	r := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/health", nil)
@@ -49,10 +51,17 @@ type jamCreatedEvent struct {
 }
 
 func TestCreateJam(t *testing.T) {
-	ctx := context.Background()
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
 
-	kafkaContainer, err := tckafka.Run(ctx, "confluentinc/confluent-local:7.5.0", tckafka.WithClusterID("test-cluster"))
+	kafkaContainer, err := tckafka.Run(
+		ctx,
+		"confluentinc/confluent-local:7.5.0",
+		tckafka.WithClusterID("test-cluster"),
+		testcontainers.WithEnv(map[string]string{
+			"KAFKA_NUM_PARTITIONS": "1",
+		}),
+	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -65,8 +74,52 @@ func TestCreateJam(t *testing.T) {
 
 	kafkaUrl := brokers[0]
 
-	topic := messaging.Topic
+	conn, err := kafka.Dial("tcp", kafkaUrl)
+	require.NoError(t, err)
+	defer conn.Close()
 
+	err = conn.CreateTopics(
+		kafka.TopicConfig{
+			Topic:             messaging.JamCreatedTopic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
+		kafka.TopicConfig{
+			Topic:             messaging.ParticipantAddedTopic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
+	)
+	require.NoError(t, err)
+
+	config := CreateTestConfig(kafkaUrl)
+	eventBus := messaging.NewKafkaEventProducer(config)
+	defer eventBus.Close()
+	handler := initHttpHandler(config, eventBus)
+
+	body := struct {
+		Name      string    `json:"name"`
+		Location  string    `json:"location"`
+		Date      time.Time `json:"date"`
+		CreatedBy string    `json:"created_by" binding:"uuid"`
+	}{
+		Name:      "John Dow",
+		Location:  "KnowWhere",
+		Date:      time.Date(2025, 12, 12, 0, 0, 0, 0, time.UTC),
+		CreatedBy: "a181a5d7-1e56-462e-9a79-678a8e54270b",
+	}
+	bodyStr, err := json.Marshal(body)
+	require.NoError(t, err)
+	r := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/jams", bytes.NewBuffer(bodyStr))
+	handler.ServeHTTP(r, req)
+
+	if r.Code != http.StatusCreated {
+		t.Logf("Error response body: %s", r.Body.String())
+	}
+	assert.Equal(t, http.StatusCreated, r.Code)
+
+	topic := messaging.JamCreatedTopic
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:     brokers,
 		GroupID:     "test-group-user-created",
@@ -77,15 +130,6 @@ func TestCreateJam(t *testing.T) {
 		MaxWait:     500 * time.Millisecond,
 	})
 	defer reader.Close()
-
-	config := CreateTestConfig(kafkaUrl)
-	handler := initHttpHandler(ctx, config)
-
-	r := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/jam", nil)
-	handler.ServeHTTP(r, req)
-
-	assert.Equal(t, http.StatusCreated, r.Code)
 
 	var got jamCreatedEvent
 	require.Eventually(t, func() bool {

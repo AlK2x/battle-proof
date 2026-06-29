@@ -7,7 +7,7 @@ import (
 )
 
 type EventPublisher interface {
-	Publish(event jam.DomainEvent) error
+	Publish(ctx context.Context, event jam.DomainEvent) error
 }
 
 func NewJamService(eventBus EventPublisher) *JamService {
@@ -28,7 +28,7 @@ type CreateJamParams struct {
 }
 
 func (js *JamService) CreateJam(ctx context.Context, params CreateJamParams) error {
-	err := js.eventBus.Publish(jam.JamCreatedEvent{
+	err := js.eventBus.Publish(ctx, &jam.JamCreatedEvent{
 		Event: jam.Event{
 			Type:       jam.JamCreated,
 			CreatedBy:  params.CreatedBy,
