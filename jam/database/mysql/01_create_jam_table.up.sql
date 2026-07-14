@@ -1,0 +1,8 @@
+CREATE TABLE `jam` (
+     `id` VARCHAR(36) NOT NULL,
+     `name` VARCHAR(255) NOT NULL,
+     `location` VARCHAR(512) NOT NULL,
+     `date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     `created_by` VARCHAR(36) NOT NULL,
+     PRIMARY KEY (`id`)
+)

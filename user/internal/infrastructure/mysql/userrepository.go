@@ -92,5 +92,6 @@ func (r *MysqlUserRepository) ListUsers(ctx context.Context) ([]*domain.User, er
 			CreatedAt: createdAt,
 		})
 	}
+
 	return result, rows.Err()
 }
