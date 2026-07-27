@@ -37,7 +37,7 @@ type CreateJamParams struct {
 
 func (js *JamService) CreateJam(ctx context.Context, params CreateJamParams) error {
 	j := jam.NewJam(params.Name, params.Location, time.Now(), jam.UserID(params.CreatedBy))
-	err := js.jamRepository.Store(&j)
+	err := js.jamRepository.Store(ctx, &j)
 	if err != nil {
 		return err
 	}
@@ -56,5 +56,5 @@ func (js *JamService) CreateJam(ctx context.Context, params CreateJamParams) err
 }
 
 func (js *JamService) ListJams(ctx context.Context) {
-	js.jamRepository.FindAll()
+	js.jamRepository.FindAll(ctx)
 }

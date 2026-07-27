@@ -3,5 +3,5 @@ CREATE TABLE `participant` (
      `user_id` VARCHAR(255) NOT NULL,
      `role` ENUM('dancer', 'judge', 'media') NOT NULL,
      `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-     PRIMARY KEY (`id`)
+     PRIMARY KEY (`jam_id`, `user_id`)
 )

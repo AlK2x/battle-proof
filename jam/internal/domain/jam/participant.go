@@ -1,6 +1,7 @@
 package jam
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,13 +43,13 @@ type Participant struct {
 }
 
 type JamRepository interface {
-	Store(p *Jam) error
-	FindByID(id JamID) (*Jam, error)
-	FindAll() ([]*Jam, error)
+	Store(ctx context.Context, p *Jam) error
+	FindByID(ctx context.Context, id JamID) (*Jam, error)
+	FindAll(ctx context.Context) ([]*Jam, error)
 }
 
 type ParticipantRepository interface {
-	Store(p *Participant) error
-	DeleteByJamID(jamID JamID) error
-	FindByJamID(id JamID) ([]*Participant, error)
+	Store(ctx context.Context, p *Participant) error
+	DeleteByJamID(ctx context.Context, jamID JamID) error
+	FindByJamID(ctx context.Context, id JamID) ([]*Participant, error)
 }

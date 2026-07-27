@@ -6,7 +6,9 @@ import (
 	"database/sql"
 	"jam/config"
 	"jam/internal/application"
+	"jam/internal/domain/jam"
 	"jam/internal/infrastructure/messaging"
+	"jam/internal/infrastructure/mysql"
 	"jam/pkg/api"
 	"jam/pkg/observability"
 	"log"
@@ -35,10 +37,15 @@ func openDbConnection(config config.Config) *sql.DB {
 	return db
 }
 
-func initHttpHandler(config config.Config, eventBus application.EventPublisher) http.Handler {
+func initHttpHandler(
+	config config.Config,
+	eventBus application.EventPublisher,
+	jamRepo jam.JamRepository,
+	participantRepo jam.ParticipantRepository,
+) http.Handler {
 	r := gin.Default()
 
-	service := application.NewJamService(eventBus)
+	service := application.NewJamService(eventBus, jamRepo, participantRepo)
 	server := api.NewServer(service)
 	r.Use(observability.ContextTraceMiddleware(AppName))
 	r.Use(observability.LoggingMiddleware())
@@ -52,7 +59,7 @@ func main() {
 	defer stop()
 
 	config := config.Init()
-	_ = openDbConnection(config)
+	db := openDbConnection(config)
 
 	eventBus := messaging.NewKafkaEventProducer(config)
 	defer func() {
@@ -61,7 +68,9 @@ func main() {
 		}
 	}()
 
-	handler := initHttpHandler(config, eventBus)
+	jamRepo := mysql.NewMySQLJamRepository(db)
+	participantRepo := mysql.NewMySQLParticipantRepository(db)
+	handler := initHttpHandler(config, eventBus, jamRepo, participantRepo)
 	server := &http.Server{
 		Addr:         config.Port,
 		Handler:      handler,
